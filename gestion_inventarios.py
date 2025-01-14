@@ -40,15 +40,15 @@ def main():
 
         if submit:
             if id_producto and nombre:
-                nuevo_producto = {
-                    'ID': id_producto,
-                    'Nombre': nombre,
-                    'Categoría': categoria,
-                    'Cantidad': cantidad,
-                    'Precio': precio,
-                    'Fecha_Última_Actualización': fecha
-                }
-                inventario = inventario.append(nuevo_producto, ignore_index=True)
+                nuevo_producto = pd.DataFrame({
+                    'ID': [id_producto],
+                    'Nombre': [nombre],
+                    'Categoría': [categoria],
+                    'Cantidad': [cantidad],
+                    'Precio': [precio],
+                    'Fecha_Última_Actualización': [fecha]
+                })
+                inventario = pd.concat([inventario, nuevo_producto], ignore_index=True)
                 save_data(inventario)
                 st.success("Producto agregado correctamente")
             else:
@@ -92,4 +92,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
