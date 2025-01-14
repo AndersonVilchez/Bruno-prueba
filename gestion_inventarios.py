@@ -1,9 +1,8 @@
-
 import streamlit as st
 import pandas as pd
 
 # Cargar datos desde un archivo CSV
-@st.cache
+@st.cache_data
 def load_data():
     try:
         data = pd.read_csv('inventario_lamparas.txt')
@@ -93,3 +92,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
