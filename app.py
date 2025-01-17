@@ -16,8 +16,8 @@ def connect_to_sheets():
     credentials_dict = json.loads(CREDENTIALS_JSON)
     credentials = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
     client = gspread.authorize(credentials)
-    # Abre el archivo "Control_Inventario_Cipla" y selecciona la hoja "cipla"
-    sheet = client.open("Control_Inventario_Cipla").worksheet("cipla")
+    # Abre el archivo "Control_Inventario_Cipla" y selecciona la hoja "Cipla"
+    sheet = client.open("Control_Inventario_Cipla").worksheet("Cipla")
     return sheet
 
 def load_data(sheet):
@@ -31,7 +31,7 @@ def save_data(sheet, data):
     sheet.update([data.columns.values.tolist()] + data.values.tolist())  # Escribe los nuevos datos
 
 def main():
-    st.title("Gestión de Inventarios de Lámparas")
+    st.title("Gestión de Inventarios")
 
     # Conectar a Google Sheets
     sheet = connect_to_sheets()
@@ -47,29 +47,22 @@ def main():
     elif choice == "Agregar Producto":
         st.subheader("Agregar Nuevo Producto")
         with st.form("form_agregar"):
-            id_producto = st.text_input("ID del Producto")
-            nombre = st.text_input("Nombre del Producto")
-            categoria = st.text_input("Categoría")
-            cantidad = st.number_input("Cantidad", min_value=0, step=1)
-            precio = st.number_input("Precio", min_value=0.0, step=0.01)
-            fecha = st.date_input("Fecha de Última Actualización")
+            # Crear campos dinámicamente basados en las columnas existentes
+            nuevo_producto = {}
+            for columna in inventario.columns:
+                if columna == "Cantidad":
+                    nuevo_producto[columna] = st.number_input(columna, min_value=0, step=1)
+                else:
+                    nuevo_producto[columna] = st.text_input(columna)
             submit = st.form_submit_button("Agregar")
 
         if submit:
-            if id_producto and nombre:
-                nuevo_producto = {
-                    'ID': id_producto,
-                    'Nombre': nombre,
-                    'Categoría': categoria,
-                    'Cantidad': cantidad,
-                    'Precio': precio,
-                    'Fecha_Última_Actualización': str(fecha)
-                }
+            if all(nuevo_producto.values()):
                 inventario = inventario.append(nuevo_producto, ignore_index=True)
                 save_data(sheet, inventario)
                 st.success("Producto agregado correctamente")
             else:
-                st.error("Por favor, complete todos los campos requeridos.")
+                st.error("Por favor, complete todos los campos.")
 
     elif choice == "Actualizar Producto":
         st.subheader("Actualizar Producto")
@@ -79,17 +72,19 @@ def main():
             producto = inventario[inventario['ID'] == id_producto]
             if not producto.empty:
                 with st.form("form_actualizar"):
-                    nombre = st.text_input("Nombre del Producto", producto.iloc[0]['Nombre'])
-                    categoria = st.text_input("Categoría", producto.iloc[0]['Categoría'])
-                    cantidad = st.number_input("Cantidad", min_value=0, step=1, value=int(producto.iloc[0]['Cantidad']))
-                    precio = st.number_input("Precio", min_value=0.0, step=0.01, value=float(producto.iloc[0]['Precio']))
-                    fecha = st.date_input("Fecha de Última Actualización", producto.iloc[0]['Fecha_Última_Actualización'])
+                    actualizado = {}
+                    for columna in inventario.columns:
+                        if columna == "Cantidad":
+                            actualizado[columna] = st.number_input(
+                                columna, min_value=0, step=1, value=int(producto.iloc[0][columna])
+                            )
+                        else:
+                            actualizado[columna] = st.text_input(columna, producto.iloc[0][columna])
                     submit = st.form_submit_button("Actualizar")
 
                 if submit:
-                    inventario.loc[inventario['ID'] == id_producto, ['Nombre', 'Categoría', 'Cantidad', 'Precio', 'Fecha_Última_Actualización']] = [
-                        nombre, categoria, cantidad, precio, fecha
-                    ]
+                    for columna, valor in actualizado.items():
+                        inventario.loc[inventario['ID'] == id_producto, columna] = valor
                     save_data(sheet, inventario)
                     st.success("Producto actualizado correctamente")
             else:
